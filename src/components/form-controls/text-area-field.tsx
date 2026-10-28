@@ -1,3 +1,4 @@
+import { FieldErrors } from '#/components/form-controls/field-errors'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
 import { useFieldContext } from '#/hooks/use-app-form'
@@ -24,11 +25,7 @@ export function TextAreaField({
         placeholder={placeholder}
         rows={rows}
       />
-      {!field.state.meta.isValid && (
-        <span className="text-xs text-red-500">
-          {field.state.meta.errors[0]?.message}
-        </span>
-      )}
+      <FieldErrors />
     </>
   )
 }

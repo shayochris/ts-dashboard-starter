@@ -1,6 +1,7 @@
 import type { FormField } from '#/components/form-controls/types'
 import { useAppForm } from '#/hooks/use-app-form'
 import z from 'zod'
+import { startOfToday, subYears } from 'date-fns'
 
 const userFormSchema = z.object({
   password: z
@@ -10,6 +11,7 @@ const userFormSchema = z.object({
   bio: z.string(),
   age: z.number(),
   country: z.string(),
+  birthday: z.date(),
 })
 
 export type UserFormType = z.infer<typeof userFormSchema>
@@ -24,6 +26,7 @@ const defaultValues = {
   bio: '',
   age: 0,
   country: '',
+  birthday: new Date(),
 }
 
 export function useManageUserForm({
@@ -39,15 +42,11 @@ export function useManageUserForm({
 
   const fields: FormField<UserFormType>[] = [
     {
+      type: 'password',
       inputType: 'text',
       name: 'password',
       label: 'Password',
       placeholder: 'Enter password',
-      listeners: {
-        onChange: ({ fieldApi }) => {
-          fieldApi.form.setFieldValue('confirmPassword', '')
-        },
-      },
       validators: {
         onChange: ({ value }) => {
           console.log('value', value)
@@ -59,6 +58,13 @@ export function useManageUserForm({
       name: 'confirmPassword',
       label: 'Confirm Password',
       hidden: (values) => !values.password,
+      validators: {
+        onChange: ({ value, fieldApi }) => {
+          return value !== fieldApi.form.getFieldValue('password')
+            ? { message: 'mismatch' }
+            : undefined
+        },
+      },
     },
     {
       inputType: 'textarea',
@@ -68,10 +74,20 @@ export function useManageUserForm({
       rows: 10,
     },
     {
+      clearable: true,
       inputType: 'select',
       name: 'country',
       label: 'country',
-      options: [],
+      options: [
+        { label: 'Tanzania', value: 'Tanzania' },
+        { label: 'kenya', value: 'kenya' },
+      ],
+    },
+    {
+      inputType: 'date',
+      name: 'birthday',
+      label: 'birthday',
+      maxDate: subYears(startOfToday(), 18),
     },
   ]
 

@@ -1,3 +1,5 @@
+import type { ComboboxField } from '#/components/form-controls/combobox-field'
+import type { DateField } from '#/components/form-controls/date-field'
 import type { SelectField } from '#/components/form-controls/select-field'
 import type { TextAreaField } from '#/components/form-controls/text-area-field'
 import type { TextField } from '#/components/form-controls/text-field'
@@ -11,12 +13,14 @@ import type {
 } from '@tanstack/react-form'
 import type { ComponentProps } from 'react'
 
-export type InputTypes = 'text' | 'textarea' | 'select'
+export type InputTypes = 'text' | 'textarea' | 'select' | 'date' | 'combobox'
 
 export type FieldPropsMap = {
   text: ComponentProps<typeof TextField>
   textarea: ComponentProps<typeof TextAreaField>
   select: ComponentProps<typeof SelectField>
+  date: ComponentProps<typeof DateField>
+  combobox: ComponentProps<typeof ComboboxField>
 }
 
 export type InputConfig = {

@@ -9,12 +9,16 @@ import { useSelector } from '@tanstack/react-store'
 import type { AppForm } from '#/hooks/use-app-form'
 import { SelectField } from '#/components/form-controls/select-field'
 import type { ComponentType } from 'react'
+import { DateField } from '#/components/form-controls/date-field'
+import { ComboboxField } from '#/components/form-controls/combobox-field'
 
 const FIELD_COMPONENTS: { [K in InputTypes]: ComponentType<FieldPropsMap[K]> } =
   {
     text: TextField,
     textarea: TextAreaField,
     select: SelectField,
+    date: DateField,
+    combobox: ComboboxField,
   }
 
 type RenderFormFieldProps<TFormData> = {
