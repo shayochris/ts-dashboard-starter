@@ -43,7 +43,7 @@ export const apiClient = remember('apiClient', () => {
         method: config.method,
         payload:
           config.method?.toUpperCase() === 'POST' ? config.data : undefined,
-        url: `${config.url ?? ''}`,
+        url: `${config.baseURL ?? ''}${config.url ?? ''}`,
       },
       '#######################  REQUEST END  ############################ \n\n',
     )
