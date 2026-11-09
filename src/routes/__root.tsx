@@ -11,6 +11,7 @@ import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from '#/components/ui/toast'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -48,6 +49,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <div id="app" className="isolate">
+          <Toaster  />
           {children}
         </div>
         <TanStackDevtools

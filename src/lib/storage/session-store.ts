@@ -4,6 +4,8 @@
 export type SessionRecord = {
   id: string
   userId: string
+  accessToken: string
+  refreshToken: string
   createdAt: number
   expiresAt: number
 }
@@ -13,6 +15,8 @@ export type SessionRecord = {
  */
 export type CreateSessionInput = {
   userId: string
+  accessToken: string
+  refreshToken: string
   expiresAt: number
 }
 

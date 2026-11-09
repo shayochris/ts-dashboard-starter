@@ -19,6 +19,8 @@ export function createRedisSessionStore(): SessionStore {
       const now = Date.now()
       const record: SessionRecord = {
         id: randomUUID(),
+        accessToken: input.accessToken,
+        refreshToken: input.refreshToken,
         expiresAt: input.expiresAt,
         createdAt: now,
         userId: input.userId,

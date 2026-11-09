@@ -15,6 +15,8 @@ export function createInMemorySessionStore(): SessionStore {
       const record: SessionRecord = {
         id: randomUUID(),
         createdAt: now,
+        accessToken: input.accessToken,
+        refreshToken: input.refreshToken,
         expiresAt: input.expiresAt,
         userId: input.userId,
       }
