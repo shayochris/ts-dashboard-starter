@@ -19,16 +19,20 @@ export const authTokensSchema = z.object({
   refreshToken: z.string(),
 })
 
+type AuthResponse = z.infer<typeof authTokensSchema>
+
 const accessTokenPayloadSchema = z.object({
   sub: z.string(),
 })
 
+// ---------------------------------------------------------------------------------
+// Login server function 
+// ---------------------------------------------------------------------------------
+
 export const loginFn = createServerFn({ method: 'POST' })
   .validator(loginFormSchema)
   .handler(async ({ data }) => {
-    const [apiError, apiResponse] = await apiClient.post('/auth/login', {
-      ...data,
-    })
+    const [apiError, apiResponse] = await apiClient.post('/auth/login', data)
 
     if (apiError) {
       throw new Error(apiError.message)
@@ -43,32 +47,40 @@ export const loginFn = createServerFn({ method: 'POST' })
       throw new Error(validationError.message)
     }
 
-    const [decodingError, decodedToken] = validateData(
-      decodeJwt(validatedResponse.accessToken),
-      accessTokenPayloadSchema,
-    )
-
-    if (decodingError) {
-      throw new Error(decodingError.message)
-    }
-
-    const { sub: userId } = decodedToken
-
-    const session = await getSessionStore().create({
-      userId,
-      accessToken: validatedResponse.accessToken,
-      refreshToken: validatedResponse.refreshToken,
-      expiresAt: Date.now() + SESSION_DURATION_MS,
-    })
-
-    setCookie(SESSION_COOKIE, session.id, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: SESSION_DURATION_MS / 1000,
-    })
+    await saveAuthResponseToSession(validatedResponse)
   })
+
+// ---------------------------------------------------------------------------------
+
+async function saveAuthResponseToSession(response: AuthResponse) {
+  const [decodingError, decodedToken] = validateData(
+    decodeJwt(response.accessToken),
+    accessTokenPayloadSchema,
+  )
+
+  if (decodingError) {
+    throw new Error(decodingError.message)
+  }
+
+  const { sub: userId } = decodedToken
+
+  const session = await getSessionStore().create({
+    userId,
+    accessToken: response.accessToken,
+    refreshToken: response.refreshToken,
+    expiresAt: Date.now() + SESSION_DURATION_MS,
+  })
+
+  setCookie(SESSION_COOKIE, session.id, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: SESSION_DURATION_MS / 1000,
+  })
+}
+
+// ---------------------------------------------------------------------------------
 
 export function useLoginUser() {
   const login = useServerFn(loginFn)
@@ -77,7 +89,7 @@ export function useLoginUser() {
   const { mutateAsync, isPending } = useMutation({
     mutationKey: ['login'],
     mutationFn: async (input: LoginFormType) => {
-      await login({ data: { ...input } })
+      await login({ data: input })
     },
     onError: (error) => {
       toast.add({
@@ -95,6 +107,8 @@ export function useLoginUser() {
     isLoggingUserIn: isPending,
   }
 }
+
+// ---------------------------------------------------------------------------------
 
 export const getLoggedInUser = createServerFn({ method: 'GET' }).handler(
   async () => {
