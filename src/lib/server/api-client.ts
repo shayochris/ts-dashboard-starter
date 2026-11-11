@@ -1,34 +1,13 @@
+import { SESSION_COOKIE } from '#/api/auth/login'
+import { refreshSessionTokens } from '#/api/auth/refresh-token'
 import { HttpClient } from '#/lib/http-client/http-client'
-import type { BaseUrl } from '#/lib/http-client/http-client'
+import { HTTP_UNAUTHORIZED } from '#/lib/http-client/status-code'
+import { getApiBaseUrl } from '#/lib/server/api-base-url'
+import { getSessionStore } from '#/lib/storage'
 
 import { remember } from '@epic-web/remember'
-
-interface AxiosErrorType {
-  config?: { baseURL?: string; method?: string; url?: string }
-  response?: { data?: unknown; status?: number }
-}
-
-function isAxiosLikeError(error: unknown): error is AxiosErrorType {
-  return typeof error === 'object' && error !== null && 'isAxiosError' in error
-}
-
-const isBaseUrl = (value: string): value is BaseUrl => {
-  return value.startsWith('http://') || value.startsWith('https://')
-}
-
-const getApiBaseUrl = (): BaseUrl => {
-  const url = process.env.API_BASE_URL
-
-  if (!url) {
-    throw new Error('API Base Url is not configured')
-  }
-
-  if (!isBaseUrl(url)) {
-    throw new Error('Invalid API Base Url')
-  }
-
-  return url
-}
+import { getCookie } from '@tanstack/react-start/server'
+import axios from 'axios'
 
 export const apiClient = remember('apiClient', () => {
   const client = new HttpClient({
@@ -36,7 +15,7 @@ export const apiClient = remember('apiClient', () => {
     logRequests: true,
   })
 
-  client.onRequest((config) => {
+  client.onRequest(async (config) => {
     console.log(
       '#######################  REQUEST START  ############################ \n\n',
       {
@@ -47,6 +26,17 @@ export const apiClient = remember('apiClient', () => {
       },
       '#######################  REQUEST END  ############################ \n\n',
     )
+
+    const sessionId = getCookie(SESSION_COOKIE)
+
+    if (sessionId) {
+      const session = await getSessionStore().get(sessionId)
+
+      if (session) {
+        config.headers.set('Authorization', `Bearer ${session.accessToken}`)
+      }
+    }
+
     return config
   })
 
@@ -60,22 +50,48 @@ export const apiClient = remember('apiClient', () => {
       return response
     },
 
-    (error) => {
-      if (isAxiosLikeError(error)) {
-        console.log(
-          '#######################  ERROR RESPONSE START  ############################ \n\n',
-          {
-            method: error.config?.method,
-            url: `${error.config?.url ?? ''}`,
-            status: error.response?.status,
-            response: error.response?.data,
-          },
-          '#######################  ERROR RESPONSE END  ############################ \n\n',
-        )
+    async (error) => {
+      if (
+        !axios.isAxiosError(error) ||
+        !error.config ||
+        error.response?.status !== HTTP_UNAUTHORIZED
+      ) {
+        throw error
       }
-      throw error
+
+      console.log(
+        '#######################  ERROR RESPONSE START  ############################ \n\n',
+        {
+          method: error.config.method,
+          url: `${error.config.url ?? ''}`,
+          status: error.response.status,
+          response: error.response.data,
+        },
+        '#######################  ERROR RESPONSE END  ############################ \n\n',
+      )
+
+      const originalRequest = error.config
+
+      if (originalRequest._retry) throw error
+
+      originalRequest._retry = true
+
+      const tokens = await refreshSessionTokens()
+      originalRequest.headers.set(
+        'Authorization',
+        `Bearer ${tokens.accessToken}`,
+      )
+      return client.resend(originalRequest)
     },
   )
 
   return client
 })
+
+// ------- Module augmentation ----------
+
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    _retry?: boolean
+  }
+}

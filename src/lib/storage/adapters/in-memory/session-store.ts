@@ -1,5 +1,6 @@
 import type {
   CreateSessionInput,
+  SessionPatchInput,
   SessionRecord,
   SessionStore,
 } from '#/lib/storage/session-store'
@@ -36,6 +37,28 @@ export function createInMemorySessionStore(): SessionStore {
     },
     delete: async (id: string): Promise<void> => {
       sessions.delete(id)
+    },
+    update: async (
+      id: string,
+      input: SessionPatchInput,
+    ): Promise<SessionRecord | null> => {
+      const record = sessions.get(id)
+
+      if (!record) return null
+
+      if (record.expiresAt < Date.now()) {
+        sessions.delete(id)
+        return null
+      }
+
+      const updatedSession = {
+        ...record,
+        ...input,
+      }
+
+      sessions.set(record.id, updatedSession)
+
+      return updatedSession
     },
   }
 }

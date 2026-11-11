@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getRedisClient } from '#/lib/storage/adapters/redis/client'
 import type {
   CreateSessionInput,
+  SessionPatchInput,
   SessionRecord,
   SessionStore,
 } from '#/lib/storage/session-store'
@@ -44,6 +45,28 @@ export function createRedisSessionStore(): SessionStore {
       const raw = await redis.get(getSessionKey(id))
       if (!raw) return null
       return JSON.parse(raw)
+    },
+
+    update: async (
+      id: string,
+      input: SessionPatchInput,
+    ): Promise<SessionRecord | null> => {
+      const raw = await redis.get(getSessionKey(id))
+      if (!raw) return null
+
+      const existing = JSON.parse(raw)
+
+      const updatedSession = {
+        ...existing,
+        ...input,
+      }
+
+      await redis.set(
+        getSessionKey(existing.id),
+        JSON.stringify(updatedSession),
+      )
+
+      return updatedSession
     },
   }
 }

@@ -19,14 +19,14 @@ export const authTokensSchema = z.object({
   refreshToken: z.string(),
 })
 
-type AuthResponse = z.infer<typeof authTokensSchema>
+export type AuthResponse = z.infer<typeof authTokensSchema>
 
 const accessTokenPayloadSchema = z.object({
   sub: z.string(),
 })
 
 // ---------------------------------------------------------------------------------
-// Login server function 
+// Login server function
 // ---------------------------------------------------------------------------------
 
 export const loginFn = createServerFn({ method: 'POST' })
@@ -47,38 +47,32 @@ export const loginFn = createServerFn({ method: 'POST' })
       throw new Error(validationError.message)
     }
 
-    await saveAuthResponseToSession(validatedResponse)
+    const [decodingError, decodedToken] = validateData(
+      decodeJwt(validatedResponse.accessToken),
+      accessTokenPayloadSchema,
+    )
+
+    if (decodingError) {
+      throw new Error(decodingError.message)
+    }
+
+    const { sub: userId } = decodedToken
+
+    const session = await getSessionStore().create({
+      userId,
+      accessToken: validatedResponse.accessToken,
+      refreshToken: validatedResponse.refreshToken,
+      expiresAt: Date.now() + SESSION_DURATION_MS,
+    })
+
+    setCookie(SESSION_COOKIE, session.id, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: SESSION_DURATION_MS / 1000,
+    })
   })
-
-// ---------------------------------------------------------------------------------
-
-async function saveAuthResponseToSession(response: AuthResponse) {
-  const [decodingError, decodedToken] = validateData(
-    decodeJwt(response.accessToken),
-    accessTokenPayloadSchema,
-  )
-
-  if (decodingError) {
-    throw new Error(decodingError.message)
-  }
-
-  const { sub: userId } = decodedToken
-
-  const session = await getSessionStore().create({
-    userId,
-    accessToken: response.accessToken,
-    refreshToken: response.refreshToken,
-    expiresAt: Date.now() + SESSION_DURATION_MS,
-  })
-
-  setCookie(SESSION_COOKIE, session.id, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_DURATION_MS / 1000,
-  })
-}
 
 // ---------------------------------------------------------------------------------
 

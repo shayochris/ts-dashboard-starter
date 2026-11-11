@@ -19,6 +19,10 @@ type OnRequestFulfilled<TBody = unknown> = (
 
 type OnRequestRejected = (error: unknown) => never
 
+type OnResponseRejected = (
+  error: unknown,
+) => Promise<AxiosResponse> | AxiosResponse
+
 export interface ExtendedAxiosInstance extends AxiosInstance {
   defaults: AxiosInstance['defaults'] & { logRequests?: boolean }
 }
@@ -79,7 +83,7 @@ export class HttpClient {
     fulfilled: (
       response: AxiosResponse,
     ) => AxiosResponse | Promise<AxiosResponse>,
-    rejected?: OnRequestRejected,
+    rejected?: OnResponseRejected,
   ) {
     const id = this.#axios.interceptors.response.use(fulfilled, rejected)
     return () => this.#axios.interceptors.response.eject(id)
@@ -156,6 +160,10 @@ export class HttpClient {
       ...config,
       method: 'GET',
     })
+  }
+
+  resend = (config: InternalAxiosRequestConfig) => {
+    return this.#axios.request(config)
   }
 
   #logRequest = (config: AxiosRequestConfig) => {
