@@ -3,11 +3,12 @@
 import type { FormField } from '#/components/form-controls/types'
 import { useAppForm } from '#/hooks/use-app-form'
 import type { UseManageFormProps } from '#/routes/-form-manager'
+import { requiredStringSchema } from '#/utils/zod-common/required-string-schema'
 import z from 'zod'
 
 export const loginFormSchema = z.object({
   email: z.email(),
-  password: z.string(),
+  password: requiredStringSchema('password'),
 })
 
 export type LoginFormType = z.infer<typeof loginFormSchema>
