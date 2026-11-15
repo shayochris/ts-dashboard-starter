@@ -1,3 +1,9 @@
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from '#/components/ui/carousel'
+import type { CarouselApi } from '#/components/ui/carousel'
 import { cn } from 'cn'
 import {
   BarChart3Icon,
@@ -60,20 +66,30 @@ const ORBIT_POSITIONS = [
 ]
 
 export function AuthShowcase() {
+  const [api, setApi] = useState<CarouselApi>()
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
 
+  // Keep the dot indicator in sync with the carousel (swipe, keys, autoplay).
   useEffect(() => {
-    if (paused) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = window.setInterval(
-      () => setActive((i) => (i + 1) % SLIDES.length),
-      AUTO_ADVANCE_MS,
-    )
-    return () => window.clearInterval(id)
-  }, [paused])
+    if (!api) return
+    const onSelect = () => setActive(api.selectedScrollSnap())
+    onSelect()
+    api.on('select', onSelect)
+    api.on('reInit', onSelect)
+    return () => {
+      api.off('select', onSelect)
+      api.off('reInit', onSelect)
+    }
+  }, [api])
 
-  const slide = SLIDES[active]
+  // Auto-advance, paused on hover and when the user prefers reduced motion.
+  useEffect(() => {
+    if (!api || paused) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const id = window.setInterval(() => api.scrollNext(), AUTO_ADVANCE_MS)
+    return () => window.clearInterval(id)
+  }, [api, paused])
 
   return (
     <div
@@ -81,28 +97,37 @@ export function AuthShowcase() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div
-        key={active}
-        className="flex flex-col items-center animate-in fade-in duration-500"
-        aria-live="polite"
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true }}
+        className="w-full max-w-110"
+        aria-label="Product highlights"
       >
-        <Illustration slide={slide} />
+        <CarouselContent>
+          {SLIDES.map((slide) => (
+            <CarouselItem
+              key={slide.title}
+              className="flex flex-col items-center"
+            >
+              <Illustration slide={slide} />
 
-        <h2 className="mt-10 text-xl font-bold">{slide.title}</h2>
-        <p className="mt-4 max-w-[400px] text-base leading-relaxed text-foreground/80">
-          {slide.description}
-        </p>
-      </div>
+              <h2 className="mt-10 text-xl font-bold">{slide.title}</h2>
+              <p className="mt-4 max-w-100 text-base leading-relaxed text-foreground/80">
+                {slide.description}
+              </p>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
 
-      <div className="mt-10 flex items-center gap-1.5" role="tablist">
+      <div className="mt-10 flex items-center gap-1.5">
         {SLIDES.map((s, i) => (
           <button
             key={s.title}
             type="button"
-            role="tab"
-            aria-selected={i === active}
+            aria-current={i === active}
             aria-label={`Show slide ${i + 1}: ${s.title}`}
-            onClick={() => setActive(i)}
+            onClick={() => api?.scrollTo(i)}
             className={cn(
               'h-1.5 rounded-full transition-all',
               i === active
@@ -120,7 +145,7 @@ function Illustration({ slide }: { slide: Slide }) {
   const Center = slide.icon
 
   return (
-    <div className="relative h-[270px] w-full max-w-[340px]">
+    <div className="relative h-67.5 w-full max-w-85">
       {/* cloud backdrop */}
       <div className="absolute inset-x-[6%] bottom-0 h-[62%] rounded-[48%_52%_40%_44%/60%_60%_40%_40%] bg-muted" />
       <div className="absolute left-[22%] bottom-[38%] size-28 rounded-full bg-muted" />

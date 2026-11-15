@@ -19,8 +19,8 @@ function AuthLayout() {
             <AuthShowcase />
           </aside>
 
-          <section className="flex flex-col px-6 py-10 sm:px-12 sm:py-14 lg:px-16">
-            <div className="mx-auto w-full max-w-132 lg:mx-0">
+          <section className="flex flex-col items-center justify-center px-6 py-10 sm:px-12 sm:py-14 lg:px-16">
+            <div className="mx-auto w-full max-w-132 lg:mx-0 ">
               <a
                 href="/"
                 className="auth-brand mb-8 inline-flex items-center gap-2"
