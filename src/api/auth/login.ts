@@ -1,6 +1,6 @@
 import { apiClient } from '#/lib/server/api-client'
-import { loginFormSchema } from '#/routes/login/-form-manager'
-import type { LoginFormType } from '#/routes/login/-form-manager'
+import { loginFormSchema } from '#/routes/_auth/login/-form-manager'
+import type { LoginFormType } from '#/routes/_auth/login/-form-manager'
 import { validateData } from '#/utils/validate-data'
 import { useMutation } from '@tanstack/react-query'
 import { createServerFn, useServerFn } from '@tanstack/react-start'
