@@ -16,7 +16,7 @@ const userFormSchema = z.object({
 
 export type UserFormType = z.infer<typeof userFormSchema>
 
-type UseManageUserFormProps<T extends Record<string, any>> = {
+export type UseManageFormProps<T extends Record<string, any>> = {
   onSubmit: (values: T) => void
 }
 
@@ -31,7 +31,7 @@ const defaultValues = {
 
 export function useManageUserForm({
   onSubmit,
-}: UseManageUserFormProps<UserFormType>) {
+}: UseManageFormProps<UserFormType>) {
   const form = useAppForm({
     defaultValues,
     onSubmit: ({ value }) => {
