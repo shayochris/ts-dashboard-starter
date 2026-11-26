@@ -1,37 +1,80 @@
-import { apiClient } from '#/lib/server/api-client'
-import { getValidatedApiResponse } from '#/utils/get-validated-response'
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { createServerFn, useServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
+import { createColumnHelper } from '@tanstack/react-table'
 
-export const getUsersFn = createServerFn().handler(async () => {
-  return getValidatedApiResponse({
-    apiFn: apiClient.get('/users'),
-    schema: z.any(),
-  })
-})
+import * as Table from '#/components/table'
+import { useClientTable } from '#/hooks/use-client-table'
 
-function useGetUsers() {
-  const getUsers = useServerFn(getUsersFn)
-
-  const { data } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => getUsers(),
-  })
-
-  return {
-    users: data,
-  }
+type Person = {
+  id: number
+  name: string
+  email: string
+  age: number
+  phone?: string
 }
+
+const people: Person[] = [
+  {
+    id: 1,
+    name: 'james',
+    email: 'james@gmail.com',
+    age: 17,
+    phone: '0712 000 000',
+  },
+  {
+    id: 2,
+    name: 'john',
+    email: 'john@gmail.com',
+    age: 20,
+    phone: '0712 000 000',
+  },
+  {
+    id: 3,
+    name: 'alex',
+    email: 'alex@gmail.com',
+    age: 18,
+    phone: '0712 000 000',
+  },
+  {
+    id: 4,
+    name: 'jane',
+    email: 'jane@gmail.com',
+    age: 19,
+    phone: '0712 000 000',
+  },
+]
+
+const columnHelper = createColumnHelper<Person>()
+
+const columns = [
+  columnHelper.accessor('id', { header: 'Id' }),
+  columnHelper.accessor('name', { header: 'Name' }),
+  columnHelper.accessor('email', { header: 'Email' }),
+  columnHelper.accessor('phone', { header: 'Phone' }),
+  columnHelper.accessor('age', {
+    header: 'Age',
+    cell: (data) => <p>{data.row.original.age} Years</p>,
+  }),
+]
 
 export const Route = createFileRoute('/users')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { users } = useGetUsers()
+  const { table, query } = useClientTable({
+    data: people,
+    columns,
+  })
 
-  console.log('users: ', users)
-  return <div>Hello "/users"!</div>
+  return (
+    <div className="p-12">
+      <Table.Root table={table} query={query}>
+        <Table.Toolbar>
+          <Table.Search />
+          <Table.ColumnVisibility />
+        </Table.Toolbar>
+        <Table.Content />
+      </Table.Root>
+    </div>
+  )
 }
